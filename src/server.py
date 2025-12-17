@@ -384,4 +384,4 @@ if __name__ == "__main__":
     )
 
     # Start the MCP server
-    mcp.run(transport="sse", host="0.0.0.0", port=8080, path="/mcp")
+    mcp.run(transport="http", host="0.0.0.0", port=8080, path="/mcp")
