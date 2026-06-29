@@ -60,13 +60,27 @@ desktop:
     enabled: false
     timeoutMinutes: 60
 
-  # Autoscaling (requires metrics-server)
-  autoscaling:
+  # KEDA autoscaling (event-driven, per-user)
+  # Scales to 0 when idle, back up on activity
+  keda:
     enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPU: 70
-    targetMemory: 80
+    minReplicas: 0   # scale to zero when idle
+    maxReplicas: 1   # single-user desktop
+    pollingInterval: 15
+    cooldownPeriod: 300  # 5 min idle → scale to zero
+    cpu:
+      enabled: true
+      targetPercentage: 70
+    memory:
+      enabled: true
+      targetPercentage: 80
+    # Scheduled availability: keep desktop up during work hours
+    cron:
+      enabled: false
+      timezone: "America/Argentina/Buenos_Aires"
+      start: "0 9 * * 1-5"   # Mon-Fri 9am
+      end: "0 18 * * 1-5"    # Mon-Fri 6pm
+      desiredReplicas: 1
 
 # Namespace configuration
 namespace:

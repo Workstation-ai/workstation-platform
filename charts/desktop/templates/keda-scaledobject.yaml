@@ -1,0 +1,37 @@
+{{- if .Values.desktop.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "desktop.fullname" . }}
+  namespace: {{ include "desktop.namespace" . }}
+  labels:
+    {{- include "desktop.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "desktop.fullname" . }}
+  pollingInterval: {{ .Values.desktop.keda.pollingInterval | default 15 }}
+  cooldownPeriod: {{ .Values.desktop.keda.cooldownPeriod | default 300 }}
+  minReplicaCount: {{ .Values.desktop.keda.minReplicas | default 0 }}
+  maxReplicaCount: {{ .Values.desktop.keda.maxReplicas | default 1 }}
+  triggers:
+    {{- if .Values.desktop.keda.cpu.enabled }}
+    - type: cpu
+      metadata:
+        type: Utilization
+        value: "{{ .Values.desktop.keda.cpu.targetPercentage | default 70 }}"
+    {{- end }}
+    {{- if .Values.desktop.keda.memory.enabled }}
+    - type: memory
+      metadata:
+        type: Utilization
+        value: "{{ .Values.desktop.keda.memory.targetPercentage | default 80 }}"
+    {{- end }}
+    {{- if .Values.desktop.keda.cron.enabled }}
+    - type: cron
+      metadata:
+        timezone: {{ .Values.desktop.keda.cron.timezone | default "America/Argentina/Buenos_Aires" }}
+        start: {{ .Values.desktop.keda.cron.start | quote }}
+        end: {{ .Values.desktop.keda.cron.end | quote }}
+        desiredReplicas: "{{ .Values.desktop.keda.cron.desiredReplicas | default 1 }}"
+    {{- end }}
+{{- end }}
