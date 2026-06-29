@@ -40,6 +40,13 @@ spec:
             - name: vnc
               containerPort: 5900
               protocol: TCP
+          env:
+            - name: IDLE_TIMEOUT_MIN
+              {{- if .Values.desktop.autoShutdown.enabled }}
+              value: {{ .Values.desktop.autoShutdown.timeoutMinutes | quote }}
+              {{- else }}
+              value: "0"
+              {{- end }}
           {{- if .Values.desktop.persistence.enabled }}
           volumeMounts:
             - name: home

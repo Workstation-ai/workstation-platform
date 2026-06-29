@@ -9,6 +9,7 @@ ENV DISPLAY=:99
 RUN apk update && apk add --no-cache \
     xvfb x11vnc websockify fluxbox supervisor nginx \
     firefox-esr font-dejavu xterm \
+    xprintidle xdotool \
     bash curl git
 
 # ── noVNC web client ───────────────────────────────────────────────────
@@ -51,6 +52,10 @@ RUN chown -R desktop:desktop /home/desktop/.fluxbox
 
 # ── Supervisor config ──────────────────────────────────────────────────
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# ── Inactivity monitor ──────────────────────────────────────────────────
+COPY inactivity-monitor.sh /usr/local/bin/inactivity-monitor.sh
+RUN chmod +x /usr/local/bin/inactivity-monitor.sh
 
 # ── Entrypoint ─────────────────────────────────────────────────────────
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

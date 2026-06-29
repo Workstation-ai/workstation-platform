@@ -56,8 +56,10 @@ desktop:
     mountPath: "/home/desktop"
 
   # Auto-shutdown after inactivity (minutes)
+  # 0 = disabled, N = shutdown after N minutes of X11 idle
+  # KEDA scales to 0 → PVC persists → next access restores state
   autoShutdown:
-    enabled: false
+    enabled: true
     timeoutMinutes: 60
 
   # KEDA autoscaling (event-driven, per-user)
