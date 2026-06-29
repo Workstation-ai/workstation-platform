@@ -1,9 +1,2 @@
-{{- if .Values.global.namespace }}
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: {{ .Values.global.namespace }}
-  labels:
-    {{- include "workstation.labels" . | nindent 4 }}
-    app.kubernetes.io/component: infrastructure
-{{- end }}
+{{/* Namespace is managed externally - this template is disabled */}}
+{{/* To create namespace: kubectl create namespace <name> */}}
