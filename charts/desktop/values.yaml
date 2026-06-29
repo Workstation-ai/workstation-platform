@@ -5,35 +5,45 @@ desktop:
   name: ""  # Required: unique desktop name
   userId: ""  # Required: user ID for ownership
   
+  # Desktop type: "guacamole" (full) or "novnc" (lightweight)
+  type: "novnc"
+  
   image:
     repository: workstation/desktop
     tag: "latest"
     pullPolicy: IfNotPresent
   
-  # Desktop environment
-  desktopEnv: "xfce"  # Options: xfce, fluxbox, kde
+  # Desktop environment (only used with guacamole type)
+  desktopEnv: "fluxbox"  # Options: xfce, fluxbox
   
   # Resource limits per desktop
   resources:
     requests:
-      cpu: "1"
-      memory: "2Gi"
+      cpu: "500m"
+      memory: "512Mi"
     limits:
-      cpu: "4"
-      memory: "8Gi"
+      cpu: "2"
+      memory: "2Gi"
   
   # VNC configuration
   vnc:
     port: 5900
     password: ""  # Will be auto-generated if empty
+    resolution: "1920x1080"
+    depth: "24"
   
-  # Guacamole integration
+  # Guacamole integration (only used when type=guacamole)
   guacamole:
-    enabled: true
     image:
       repository: guacamole/guacamole
       tag: "1.5.4"
     port: 8080
+  
+  # Cloudflare tunnel configuration
+  tunnel:
+    enabled: true
+    # type: "quick" (ephemeral URL) — only quick tunnels supported for now
+    type: "quick"
   
   # Persistence for desktop files
   persistence:
@@ -41,15 +51,8 @@ desktop:
     storageClass: "standard"
     accessModes:
       - ReadWriteOnce
-    size: "20Gi"
+    size: "10Gi"
     mountPath: "/home/user"
-  
-  # Network access
-  network:
-    ingress:
-      enabled: true
-      host: "desktop.{{ .Release.Name }}.workstation.local"
-      tls: false
   
   # Auto-shutdown after inactivity (minutes)
   autoShutdown:

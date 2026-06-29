@@ -4,7 +4,7 @@ metadata:
   name: {{ include "desktop.fullname" . }}
   namespace: {{ include "desktop.namespace" . }}
   labels:
-    {{- include "desktop.labels" . | nindent 4 }}
+    {{- include "desktop.labels" | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
@@ -12,43 +12,17 @@ spec:
       targetPort: vnc
       protocol: TCP
       name: vnc
-    {{- if .Values.desktop.guacamole.enabled }}
+    {{- if eq .Values.desktop.type "guacamole" }}
     - port: {{ .Values.desktop.guacamole.port }}
       targetPort: guacamole
       protocol: TCP
       name: guacamole
     {{- end }}
+    {{- if eq .Values.desktop.type "novnc" }}
+    - port: 6080
+      targetPort: novnc
+      protocol: TCP
+      name: novnc
+    {{- end }}
   selector:
-    {{- include "desktop.selectorLabels" . | nindent 4 }}
----
-{{- if .Values.desktop.network.ingress.enabled }}
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ include "desktop.fullname" . }}
-  namespace: {{ include "desktop.namespace" . }}
-  labels:
-    {{- include "desktop.labels" . | nindent 4 }}
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    nginx.ingress.kubernetes.io/websocket-services: {{ include "desktop.fullname" . }}
-spec:
-  {{- if .Values.desktop.network.ingress.tls }}
-  tls:
-    - hosts:
-        - {{ .Values.desktop.network.ingress.host }}
-      secretName: {{ include "desktop.fullname" . }}-tls
-  {{- end }}
-  rules:
-    - host: {{ .Values.desktop.network.ingress.host }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ include "desktop.fullname" . }}
-                port:
-                  name: vnc
-{{- end }}
+    {{- include "desktop.selectorLabels" | nindent 4 }}

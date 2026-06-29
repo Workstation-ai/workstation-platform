@@ -8,48 +8,137 @@ metadata:
   annotations:
     desktop.workstation.io/user: {{ .Values.desktop.userId }}
     desktop.workstation.io/desktop-env: {{ .Values.desktop.desktopEnv | quote }}
+    desktop.workstation.io/type: {{ .Values.desktop.type | quote }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "desktop.selectorLabels" . | nindent 6 }}
+      {{- include "desktop.selectorLabels" | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "desktop.selectorLabels" . | nindent 8 }}
+        {{- include "desktop.selectorLabels" | nindent 8 }}
       annotations:
         desktop.workstation.io/name: {{ .Values.desktop.name | quote }}
         desktop.workstation.io/user: {{ .Values.desktop.userId | quote }}
+        {{- if .Values.desktop.tunnel.enabled }}
+        tunnel.workstation.io/enabled: "true"
+        tunnel.workstation.io/type: {{ .Values.desktop.tunnel.type | quote }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "desktop.fullname" . }}
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
       initContainers:
         - name: init-desktop
           image: "{{ .Values.desktop.image.repository }}:{{ .Values.desktop.image.tag }}"
           command: ["/bin/sh", "-c"]
           args:
             - |
-              # Initialize desktop environment
-              mkdir -p /home/user/.vnc
-              echo "$VNC_PASSWORD" | vncpasswd -f > /home/user/.vnc/passwd
+              set -e
+              echo "=== Initializing {{ .Values.desktop.type }} desktop ==="
+
+              {{- if eq .Values.desktop.type "novnc" }}
+              # noVNC mode: Xvfb + x11vnc + websockify
+              apt-get update -qq && apt-get install -y -qq --no-install-recommends \
+                xvfb x11vnc websockify fluxbox > /dev/null 2>&1 || true
+
+              mkdir -p /home/user/.vnc /home/user/.workstation
+              echo "$VNC_PASSWORD" | x11vnc -storepasswd /home/user/.vnc/passwd
               chmod 600 /home/user/.vnc/passwd
-              
-              # Create xstartup based on desktop environment
-              cat > /home/user/.vnc/xstartup << 'EOF'
+
+              cat > /home/user/.workstation/start-xvfb.sh << 'XSTART'
               #!/bin/bash
               export DISPLAY=:1
+              Xvfb :1 -screen 0 {{ .Values.desktop.vnc.resolution | default "1920x1080" }}x{{ .Values.desktop.vnc.depth | default "24" }} &
+              sleep 1
+              fluxbox &
+              sleep 1
+              x11vnc -display :1 -forever -shared -rfbport 5900 -rfbauth /home/user/.vnc/passwd &
+              sleep 1
+              websockify --web /usr/share/novnc 6080 localhost:5900 &
+              echo "Desktop stack started"
+              XSTART
+              chmod +x /home/user/.workstation/start-xvfb.sh
+
+              cat > /home/user/.workstation/start-tunnel.sh << 'TUNSTART'
+              #!/bin/bash
+              set -e
+              LOG=/tmp/tunnel/cloudflared.log
+              mkdir -p /tmp/tunnel
+              echo "Starting cloudflared tunnel to port 6080..."
+              cloudflared tunnel --no-autoupdate --url http://localhost:6080 > "$LOG" 2>&1 &
+              CF_PID=$!
+              for i in $(seq 1 30); do
+                CF_URL=$(grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare\.com' "$LOG" 2>/dev/null | tail -1)
+                if [ -n "$CF_URL" ]; then
+                  echo "$CF_URL" > /tmp/tunnel/URL
+                  echo "TUNNEL_URL=$CF_URL"
+                  echo "=== Tunnel ready: $CF_URL ==="
+                  break
+                fi
+                kill -0 $CF_PID 2>/dev/null || { echo "cloudflared exited"; exit 1; }
+                sleep 1
+              done
+              wait $CF_PID
+              TUNSTART
+              chmod +x /home/user/.workstation/start-tunnel.sh
+
+              # Install novnc if available
+              if [ ! -d /usr/share/novnc ]; then
+                git clone --depth 1 https://github.com/novnc/noVNC.git /usr/share/novnc 2>/dev/null || true
+              fi
+              {{- else }}
+              # Guacamole mode: Xvfb + x11vnc + guacd + guacamole
+              mkdir -p /home/user/.vnc /home/user/.workstation
+              echo "$VNC_PASSWORD" | x11vnc -storepasswd /home/user/.vnc/passwd
+              chmod 600 /home/user/.vnc/passwd
+
+              cat > /home/user/.workstation/start-xvfb.sh << 'XSTART'
+              #!/bin/bash
+              export DISPLAY=:1
+              Xvfb :1 -screen 0 {{ .Values.desktop.vnc.resolution | default "1920x1080" }}x{{ .Values.desktop.vnc.depth | default "24" }} &
+              sleep 1
               {{- if eq .Values.desktop.desktopEnv "xfce" }}
               startxfce4 &
               {{- else if eq .Values.desktop.desktopEnv "fluxbox" }}
               fluxbox &
-              {{- else if eq .Values.desktop.desktopEnv "kde" }}
-              startplasma-x11 &
+              {{- else }}
+              fluxbox &
               {{- end }}
-              EOF
-              chmod +x /home/user/.vnc/xstartup
+              sleep 1
+              x11vnc -display :1 -forever -shared -rfbport 5900 -rfbauth /home/user/.vnc/passwd &
+              echo "Desktop stack started"
+              XSTART
+              chmod +x /home/user/.workstation/start-xvfb.sh
+
+              cat > /home/user/.workstation/start-tunnel.sh << 'TUNSTART'
+              #!/bin/bash
+              set -e
+              LOG=/tmp/tunnel/cloudflared.log
+              mkdir -p /tmp/tunnel
+              echo "Starting cloudflared tunnel to port 8080..."
+              cloudflared tunnel --no-autoupdate --url http://localhost:8080 > "$LOG" 2>&1 &
+              CF_PID=$!
+              for i in $(seq 1 30); do
+                CF_URL=$(grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare\.com' "$LOG" 2>/dev/null | tail -1)
+                if [ -n "$CF_URL" ]; then
+                  echo "$CF_URL" > /tmp/tunnel/URL
+                  echo "TUNNEL_URL=$CF_URL"
+                  echo "=== Tunnel ready: $CF_URL ==="
+                  break
+                fi
+                kill -0 $CF_PID 2>/dev/null || { echo "cloudflared exited"; exit 1; }
+                sleep 1
+              done
+              wait $CF_PID
+              TUNSTART
+              chmod +x /home/user/.workstation/start-tunnel.sh
+              {{- end }}
+
+              echo "Init complete"
           env:
             - name: VNC_PASSWORD
               valueFrom:
@@ -64,11 +153,24 @@ spec:
       containers:
         - name: desktop
           image: "{{ .Values.desktop.image.repository }}:{{ .Values.desktop.image.tag }}"
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+              echo "=== Starting {{ .Values.desktop.type }} desktop ==="
+              bash /home/user/.workstation/start-xvfb.sh
+              echo "Desktop started, waiting..."
+              wait
           ports:
             - name: vnc
               containerPort: {{ .Values.desktop.vnc.port }}
               protocol: TCP
-            {{- if .Values.desktop.guacamole.enabled }}
+            {{- if eq .Values.desktop.type "novnc" }}
+            - name: novnc
+              containerPort: 6080
+              protocol: TCP
+            {{- end }}
+            {{- if eq .Values.desktop.type "guacamole" }}
             - name: guacamole
               containerPort: {{ .Values.desktop.guacamole.port }}
               protocol: TCP
@@ -100,7 +202,7 @@ spec:
               port: vnc
             initialDelaySeconds: 5
             periodSeconds: 5
-        {{- if .Values.desktop.guacamole.enabled }}
+        {{- if eq .Values.desktop.type "guacamole" }}
         - name: guacamole
           image: "{{ .Values.desktop.guacamole.image.repository }}:{{ .Values.desktop.guacamole.image.tag }}"
           ports:
@@ -129,6 +231,27 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
+        {{- end }}
+        {{- if .Values.desktop.tunnel.enabled }}
+        - name: cloudflared
+          image: "cloudflare/cloudflared:latest"
+          command:
+            - "cloudflared"
+            - "tunnel"
+            - "--no-autoupdate"
+            - "--url"
+            - "http://localhost:{{ if eq .Values.desktop.type \"novnc\" }}6080{{ else }}8080{{ end }}"
+          ports:
+            - name: tunnel
+              containerPort: 7844
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
         {{- end }}
       {{- if .Values.desktop.persistence.enabled }}
       volumes:

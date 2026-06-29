@@ -2,7 +2,7 @@
 Desktop full name
 */}}
 {{- define "desktop.fullname" -}}
-{{- printf "%s-desktop-%s" .Release.Name .Values.desktop.name | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" .Release.Name .Values.desktop.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -12,7 +12,7 @@ Namespace for desktop
 {{- if .Values.namespace.name }}
 {{- .Values.namespace.name }}
 {{- else }}
-{{- printf "desktop-%s-%s" .Release.Name .Values.desktop.name | trunc 63 | trimSuffix "-" }}
+{{- .Release.Namespace }}
 {{- end }}
 {{- end }}
 
