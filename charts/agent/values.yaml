@@ -6,7 +6,7 @@ agent:
   userId: ""  # Required: user ID for ownership
   
   image:
-    repository: workstation/ai-agent
+    repository: workstation/agent
     tag: "latest"
     pullPolicy: IfNotPresent
   
@@ -19,18 +19,12 @@ agent:
       cpu: "2"
       memory: "4Gi"
   
-  # Agent environment
-  env:
-    - name: AGENT_NAME
-      value: ""  # Will be set from agent.name
-    - name: USER_ID
-      value: ""  # Will be set from agent.userId
-    - name: PERSISTENCE_PATH
-      value: "/home/agent/persistence"
-    - name: MODEL_PROVIDER
-      value: "openai"
-    - name: MODEL_NAME
-      value: "gpt-4"
+  # Agent environment (additional env vars, AGENT_NAME/USER_ID/PERSISTENCE_PATH are set automatically)
+  env: []
+    # - name: MODEL_PROVIDER
+    #   value: "openai"
+    # - name: MODEL_NAME
+    #   value: "gpt-4"
   
   # Persistence
   persistence:

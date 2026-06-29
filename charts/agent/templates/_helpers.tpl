@@ -2,7 +2,7 @@
 Agent full name
 */}}
 {{- define "agent.fullname" -}}
-{{- printf "%s-agent-%s" .Release.Name .Values.agent.name | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" .Release.Name .Values.agent.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -12,7 +12,7 @@ Namespace for agent
 {{- if .Values.namespace.name }}
 {{- .Values.namespace.name }}
 {{- else }}
-{{- printf "agent-%s-%s" .Release.Name .Values.agent.name | trunc 63 | trimSuffix "-" }}
+{{- .Release.Namespace }}
 {{- end }}
 {{- end }}
 
