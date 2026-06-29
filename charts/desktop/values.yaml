@@ -1,19 +1,32 @@
 # Workstation Desktop Chart Values
+#
+# Resource profiles:
+#   small  — constrained clusters, dev/test (1GB RAM, 1 CPU)
+#   medium — production single-tenant (2GB RAM, 2 CPU)
+#   large  — power users, multi-tab browsing (4GB RAM, 4 CPU)
+#
+# Usage:
+#   helm install desktop ./charts/desktop --set desktop.profile=medium
+#   helm install desktop ./charts/desktop --set desktop.profile=large
 
 # Desktop configuration
 desktop:
   name: ""  # Required: unique desktop name
   userId: ""  # Required: user ID for ownership
 
+  # Resource profile: "small" | "medium" | "large"
+  # Overrides resources.* when set. Set to "" to use explicit resources.
+  profile: "small"
+
   # Desktop type: "novnc" (default, self-contained)
   type: "novnc"
 
   image:
     repository: workstation/desktop
-    tag: "alpine"
+    tag: "alpine-https"
     pullPolicy: IfNotPresent
 
-  # Resource limits per desktop
+  # Explicit resource limits (ignored when profile is set)
   resources:
     requests:
       cpu: "250m"
@@ -31,7 +44,7 @@ desktop:
   # Cloudflare tunnel configuration
   tunnel:
     enabled: true
-    type: "quick"  # quick tunnels = ephemeral URL
+    type: "quick"  # quick tunnels = ephemeral URL, always HTTPS
 
   # Persistence for desktop files
   persistence:

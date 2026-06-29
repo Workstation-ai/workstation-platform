@@ -48,3 +48,40 @@ Generate VNC password if not provided
 {{- randAlphaNum 16 }}
 {{- end }}
 {{- end }}
+
+{{/*
+Resource profile resolution:
+  small  = 250m/256Mi request, 1/1Gi limit
+  medium = 500m/512Mi request, 2/2Gi limit
+  large  = 1/1Gi request,     4/4Gi limit
+*/}}
+{{- define "desktop.resources" -}}
+{{- $profile := .Values.desktop.profile | default "" -}}
+{{- if eq $profile "large" }}
+requests:
+  cpu: "1"
+  memory: "1Gi"
+limits:
+  cpu: "4"
+  memory: "4Gi"
+{{- else if eq $profile "medium" }}
+requests:
+  cpu: "500m"
+  memory: "512Mi"
+limits:
+  cpu: "2"
+  memory: "2Gi"
+{{- else }}
+{{- /* small or unset — use explicit values or defaults */ -}}
+{{- if .Values.desktop.resources }}
+{{- toYaml .Values.desktop.resources | nindent 0 }}
+{{- else }}
+requests:
+  cpu: "250m"
+  memory: "256Mi"
+limits:
+  cpu: "1"
+  memory: "1Gi"
+{{- end }}
+{{- end }}
+{{- end }}

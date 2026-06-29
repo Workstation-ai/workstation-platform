@@ -46,7 +46,7 @@ spec:
               mountPath: /home/desktop
           {{- end }}
           resources:
-            {{- toYaml .Values.desktop.resources | nindent 12 }}
+            {{- include "desktop.resources" . | nindent 12 }}
           livenessProbe:
             tcpSocket:
               port: novnc
