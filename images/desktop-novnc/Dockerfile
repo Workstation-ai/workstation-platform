@@ -8,7 +8,7 @@ ENV DISPLAY=:99
 # ── System packages + Firefox ESR + nginx ──────────────────────────────
 RUN apk update && apk add --no-cache \
     xvfb x11vnc websockify fluxbox supervisor nginx \
-    firefox-esr font-dejavu \
+    firefox-esr font-dejavu xterm \
     bash curl git
 
 # ── noVNC web client ───────────────────────────────────────────────────
