@@ -13,17 +13,13 @@ spec:
     - Ingress
     - Egress
   ingress:
-    - from: []
-      ports:
+    - ports:
         - protocol: TCP
-          port: {{ .Values.desktop.vnc.port }}
-        {{- if .Values.desktop.guacamole.enabled }}
+          port: 6080
         - protocol: TCP
-          port: {{ .Values.desktop.guacamole.port }}
-        {{- end }}
+          port: 5900
   egress:
-    - to: []
-      ports:
+    - ports:
         - protocol: UDP
           port: 53
         - protocol: TCP

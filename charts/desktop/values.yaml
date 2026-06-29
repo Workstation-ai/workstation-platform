@@ -60,6 +60,14 @@ desktop:
     enabled: false
     timeoutMinutes: 60
 
+  # Autoscaling (requires metrics-server)
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPU: 70
+    targetMemory: 80
+
 # Namespace configuration
 namespace:
   create: false

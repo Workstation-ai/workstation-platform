@@ -1,15 +1,24 @@
 apiVersion: v2
 name: workstation-desktop
-description: On-demand desktop for Workstation Platform - Guacamole + Xvfb per user
+description: >-
+  Workstation Center OS — browser-accessible virtual desktop on Kubernetes.
+  Includes Firefox ESR, fluxbox, noVNC, nginx (HTTPS redirect), and
+  Cloudflare tunnel sidecar for public access.
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "1.0.0"
 keywords:
   - desktop
-  - guacamole
+  - novnc
   - vnc
+  - firefox
+  - remote-desktop
+  - cloudflare-tunnel
   - on-demand
   - multi-tenant
+home: https://github.com/Workstation-ai/workstation-platform
+sources:
+  - https://github.com/Workstation-ai/workstation-platform
 maintainers:
-  - name: Gaston Zarate
-    email: gaston@example.com
+  - name: Workstation AI
+    email: ignacio@workstation.center

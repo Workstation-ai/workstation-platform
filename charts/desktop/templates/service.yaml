@@ -4,25 +4,17 @@ metadata:
   name: {{ include "desktop.fullname" . }}
   namespace: {{ include "desktop.namespace" . }}
   labels:
-    {{- include "desktop.labels" | nindent 4 }}
+    {{- include "desktop.labels" . | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
-    - port: {{ .Values.desktop.vnc.port }}
-      targetPort: vnc
-      protocol: TCP
-      name: vnc
-    {{- if eq .Values.desktop.type "guacamole" }}
-    - port: {{ .Values.desktop.guacamole.port }}
-      targetPort: guacamole
-      protocol: TCP
-      name: guacamole
-    {{- end }}
-    {{- if eq .Values.desktop.type "novnc" }}
     - port: 6080
       targetPort: novnc
       protocol: TCP
       name: novnc
-    {{- end }}
+    - port: 5900
+      targetPort: vnc
+      protocol: TCP
+      name: vnc
   selector:
-    {{- include "desktop.selectorLabels" | nindent 4 }}
+    {{- include "desktop.selectorLabels" . | nindent 4 }}

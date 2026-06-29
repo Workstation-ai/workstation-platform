@@ -1,0 +1,19 @@
+Workstation Center OS deployed!
+
+Desktop: {{ include "desktop.fullname" . }}
+Namespace: {{ include "desktop.namespace" . }}
+Profile: {{ .Values.desktop.profile }}
+
+{{- if .Values.desktop.tunnel.enabled }}
+
+External access via Cloudflare quick tunnel:
+  kubectl logs -l app={{ include "desktop.fullname" . }} -n {{ include "desktop.namespace" . }} -c cloudflared | grep trycloudflare
+
+Open the URL in your browser for a full desktop with Firefox ESR.
+{{- else }}
+
+Internal access via port-forward:
+  kubectl port-forward svc/{{ include "desktop.fullname" . }} 6080:6080 -n {{ include "desktop.namespace" . }}
+
+Then open http://localhost:6080 in your browser.
+{{- end }}
