@@ -32,7 +32,7 @@ Use this skill when:
 
 ```
 xvfb x11vnc websockify fluxbox nginx supervisor
-firefox-esr font-dejavu bash curl git
+firefox-esr font-dejavu xterm bash curl git
 ```
 
 ## Supervisord Config
