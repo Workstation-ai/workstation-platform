@@ -1,0 +1,29 @@
+# Base Agent Configuration
+# Deploy with: helm install agent-<name> ./charts/agent --namespace agent-<name> --set agent.name=<name>,agent.userId=<user-id>
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-config
+  labels:
+    app.kubernetes.io/name: workstation-agent
+data:
+  # Agent behavior
+  AGENT_MODE: "interactive"
+  AGENT_TIMEOUT: "300"
+  
+  # MCP Server connection
+  MCP_SERVER_URL: "http://workstation-mcp-server.workstation.svc.cluster.local:8080"
+  
+  # Model configuration
+  MODEL_PROVIDER: "openai"
+  MODEL_NAME: "gpt-4"
+  MODEL_TEMPERATURE: "0.7"
+  MODEL_MAX_TOKENS: "4096"
+  
+  # Persistence
+  PERSISTENCE_ENABLED: "true"
+  PERSISTENCE_PATH: "/home/agent/persistence"
+  
+  # Security
+  SANDBOX_ENABLED: "true"
+  ALLOWED_COMMANDS: "ls,cat,head,tail,grep,find,wc,sort,uniq,cut,paste,awk,sed,tr,echo,printf,env,printenv,which,type,help,man"

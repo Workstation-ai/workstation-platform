@@ -1,0 +1,11 @@
+{{- if .Values.namespace.create }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "agent.namespace" . }}
+  labels:
+    {{- include "agent.labels" . | nindent 4 }}
+    agent.workstation.io/user: {{ .Values.agent.userId }}
+  annotations:
+    agent.workstation.io/created-at: {{ now | date "2006-01-02T15:04:05Z" | quote }}
+{{- end }}

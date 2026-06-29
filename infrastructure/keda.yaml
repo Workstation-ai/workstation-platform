@@ -1,0 +1,47 @@
+# KEDA ScaledObject for Workstation MCP Server
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: mcp-server-scaler
+  namespace: workstation
+  labels:
+    app.kubernetes.io/name: mcp-server
+    app.kubernetes.io/part-of: workstation
+spec:
+  scaleTargetRef:
+    name: workstation-mcp-server
+  minReplicaCount: 2
+  maxReplicaCount: 10
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "70"
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "80"
+---
+# KEDA ScaledObject for Agent Deployments
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: agent-trigger-auth
+  namespace: workstation
+spec:
+  secretTargetRef:
+    - parameter: POSTGRES_URL
+      name: workstation-postgres-credentials
+      key: POSTGRES_URL
+---
+apiVersion: keda.sh/v1alpha1
+kind: ClusterTriggerAuthentication
+metadata:
+  name: agent-trigger-auth
+spec:
+  secretTargetRef:
+    - parameter: POSTGRES_URL
+      name: workstation-postgres-credentials
+      key: POSTGRES_URL

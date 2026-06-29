@@ -1,0 +1,62 @@
+# Workstation Desktop Chart Values
+
+# Desktop configuration
+desktop:
+  name: ""  # Required: unique desktop name
+  userId: ""  # Required: user ID for ownership
+  
+  image:
+    repository: workstation/desktop
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # Desktop environment
+  desktopEnv: "xfce"  # Options: xfce, fluxbox, kde
+  
+  # Resource limits per desktop
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+  
+  # VNC configuration
+  vnc:
+    port: 5900
+    password: ""  # Will be auto-generated if empty
+  
+  # Guacamole integration
+  guacamole:
+    enabled: true
+    image:
+      repository: guacamole/guacamole
+      tag: "1.5.4"
+    port: 8080
+  
+  # Persistence for desktop files
+  persistence:
+    enabled: true
+    storageClass: "standard"
+    accessModes:
+      - ReadWriteOnce
+    size: "20Gi"
+    mountPath: "/home/user"
+  
+  # Network access
+  network:
+    ingress:
+      enabled: true
+      host: "desktop.{{ .Release.Name }}.workstation.local"
+      tls: false
+  
+  # Auto-shutdown after inactivity (minutes)
+  autoShutdown:
+    enabled: true
+    timeoutMinutes: 60
+
+# Namespace configuration
+namespace:
+  create: true
+  name: ""

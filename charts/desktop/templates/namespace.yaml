@@ -1,0 +1,12 @@
+{{- if .Values.namespace.create }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "desktop.namespace" . }}
+  labels:
+    {{- include "desktop.labels" . | nindent 4 }}
+    desktop.workstation.io/user: {{ .Values.desktop.userId }}
+  annotations:
+    desktop.workstation.io/created-at: {{ now | date "2006-01-02T15:04:05Z" | quote }}
+    desktop.workstation.io/desktop-env: {{ .Values.desktop.desktopEnv | quote }}
+{{- end }}

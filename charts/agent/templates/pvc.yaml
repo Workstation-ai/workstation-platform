@@ -1,0 +1,18 @@
+{{- if .Values.agent.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "agent.fullname" . }}-persistence
+  namespace: {{ include "agent.namespace" . }}
+  labels:
+    {{- include "agent.labels" . | nindent 4 }}
+  annotations:
+    agent.workstation.io/user: {{ .Values.agent.userId }}
+spec:
+  accessModes:
+    {{- toYaml .Values.agent.persistence.accessModes | nindent 4 }}
+  storageClassName: {{ .Values.agent.persistence.storageClass | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.agent.persistence.size }}
+{{- end }}

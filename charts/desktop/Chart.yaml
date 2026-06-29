@@ -1,0 +1,15 @@
+apiVersion: v2
+name: workstation-desktop
+description: On-demand desktop for Workstation Platform - Guacamole + Xvfb per user
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - desktop
+  - guacamole
+  - vnc
+  - on-demand
+  - multi-tenant
+maintainers:
+  - name: Gaston Zarate
+    email: gaston@example.com

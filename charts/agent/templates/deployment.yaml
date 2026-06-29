@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agent.fullname" . }}
+  namespace: {{ include "agent.namespace" . }}
+  labels:
+    {{- include "agent.labels" . | nindent 4 }}
+  annotations:
+    agent.workstation.io/user: {{ .Values.agent.userId }}
+spec:
+  replicas: {{ .Values.agent.api.replicas }}
+  selector:
+    matchLabels:
+      {{- include "agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "agent.selectorLabels" . | nindent 8 }}
+      annotations:
+        agent.workstation.io/name: {{ .Values.agent.name | quote }}
+        agent.workstation.io/user: {{ .Values.agent.userId | quote }}
+    spec:
+      serviceAccountName: {{ include "agent.fullname" . }}
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: agent
+          image: "{{ .Values.agent.image.repository }}:{{ .Values.agent.image.tag }}"
+          imagePullPolicy: {{ .Values.agent.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.agent.api.port }}
+              protocol: TCP
+          env:
+            - name: AGENT_NAME
+              value: {{ .Values.agent.name | quote }}
+            - name: USER_ID
+              value: {{ .Values.agent.userId | quote }}
+            - name: PERSISTENCE_PATH
+              value: {{ .Values.agent.persistence.mountPath | quote }}
+            {{- range .Values.agent.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          {{- if .Values.agent.persistence.enabled }}
+          volumeMounts:
+            - name: persistence
+              mountPath: {{ .Values.agent.persistence.mountPath }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.agent.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      {{- if .Values.agent.persistence.enabled }}
+      volumes:
+        - name: persistence
+          persistentVolumeClaim:
+            claimName: {{ include "agent.fullname" . }}-persistence
+      {{- end }}

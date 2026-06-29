@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "desktop.fullname" . }}
+  namespace: {{ include "desktop.namespace" . }}
+  labels:
+    {{- include "desktop.labels" . | nindent 4 }}
+  annotations:
+    desktop.workstation.io/user: {{ .Values.desktop.userId }}
+    desktop.workstation.io/desktop-env: {{ .Values.desktop.desktopEnv | quote }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "desktop.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "desktop.selectorLabels" . | nindent 8 }}
+      annotations:
+        desktop.workstation.io/name: {{ .Values.desktop.name | quote }}
+        desktop.workstation.io/user: {{ .Values.desktop.userId | quote }}
+    spec:
+      serviceAccountName: {{ include "desktop.fullname" . }}
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: init-desktop
+          image: "{{ .Values.desktop.image.repository }}:{{ .Values.desktop.image.tag }}"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Initialize desktop environment
+              mkdir -p /home/user/.vnc
+              echo "$VNC_PASSWORD" | vncpasswd -f > /home/user/.vnc/passwd
+              chmod 600 /home/user/.vnc/passwd
+              
+              # Create xstartup based on desktop environment
+              cat > /home/user/.vnc/xstartup << 'EOF'
+              #!/bin/bash
+              export DISPLAY=:1
+              {{- if eq .Values.desktop.desktopEnv "xfce" }}
+              startxfce4 &
+              {{- else if eq .Values.desktop.desktopEnv "fluxbox" }}
+              fluxbox &
+              {{- else if eq .Values.desktop.desktopEnv "kde" }}
+              startplasma-x11 &
+              {{- end }}
+              EOF
+              chmod +x /home/user/.vnc/xstartup
+          env:
+            - name: VNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "desktop.fullname" . }}-credentials
+                  key: vnc-password
+          {{- if .Values.desktop.persistence.enabled }}
+          volumeMounts:
+            - name: home
+              mountPath: /home/user
+          {{- end }}
+      containers:
+        - name: desktop
+          image: "{{ .Values.desktop.image.repository }}:{{ .Values.desktop.image.tag }}"
+          ports:
+            - name: vnc
+              containerPort: {{ .Values.desktop.vnc.port }}
+              protocol: TCP
+            {{- if .Values.desktop.guacamole.enabled }}
+            - name: guacamole
+              containerPort: {{ .Values.desktop.guacamole.port }}
+              protocol: TCP
+            {{- end }}
+          env:
+            - name: DISPLAY
+              value: ":1"
+            - name: VNC_PORT
+              value: {{ .Values.desktop.vnc.port | quote }}
+            - name: VNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "desktop.fullname" . }}-credentials
+                  key: vnc-password
+          {{- if .Values.desktop.persistence.enabled }}
+          volumeMounts:
+            - name: home
+              mountPath: /home/user
+          {{- end }}
+          resources:
+            {{- toYaml .Values.desktop.resources | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: vnc
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: vnc
+            initialDelaySeconds: 5
+            periodSeconds: 5
+        {{- if .Values.desktop.guacamole.enabled }}
+        - name: guacamole
+          image: "{{ .Values.desktop.guacamole.image.repository }}:{{ .Values.desktop.guacamole.image.tag }}"
+          ports:
+            - name: guacamole
+              containerPort: {{ .Values.desktop.guacamole.port }}
+              protocol: TCP
+          env:
+            - name: GUACD_HOSTNAME
+              value: "localhost"
+            - name: GUACD_PORT
+              value: "4822"
+            - name: MYSQL_HOSTNAME
+              value: ""
+            - name: MYSQL_PORT
+              value: "3306"
+            - name: MYSQL_DATABASE
+              value: "guacamole"
+            - name: MYSQL_USER
+              value: "guacamole"
+            - name: MYSQL_PASSWORD
+              value: ""
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+        {{- end }}
+      {{- if .Values.desktop.persistence.enabled }}
+      volumes:
+        - name: home
+          persistentVolumeClaim:
+            claimName: {{ include "desktop.fullname" . }}-home
+      {{- end }}

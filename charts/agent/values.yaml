@@ -1,0 +1,53 @@
+# Workstation Agent Chart Values
+
+# Agent configuration
+agent:
+  name: ""  # Required: unique agent name
+  userId: ""  # Required: user ID for ownership
+  
+  image:
+    repository: workstation/ai-agent
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # Resource limits per agent
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  
+  # Agent environment
+  env:
+    - name: AGENT_NAME
+      value: ""  # Will be set from agent.name
+    - name: USER_ID
+      value: ""  # Will be set from agent.userId
+    - name: PERSISTENCE_PATH
+      value: "/home/agent/persistence"
+    - name: MODEL_PROVIDER
+      value: "openai"
+    - name: MODEL_NAME
+      value: "gpt-4"
+  
+  # Persistence
+  persistence:
+    enabled: true
+    storageClass: "standard"
+    accessModes:
+      - ReadWriteOnce
+    size: "10Gi"
+    mountPath: "/home/agent/persistence"
+  
+  # API endpoint for agent control
+  api:
+    enabled: true
+    port: 8080
+    replicas: 1
+
+# Namespace configuration
+namespace:
+  create: true
+  name: ""  # Will be auto-generated if empty

@@ -1,0 +1,14 @@
+apiVersion: v2
+name: workstation-base
+description: Base Helm chart for Workstation Platform - multi-tenant infrastructure
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - kubernetes
+  - multi-tenant
+  - workstation
+  - ai-agents
+maintainers:
+  - name: Gaston Zarate
+    email: gaston@example.com

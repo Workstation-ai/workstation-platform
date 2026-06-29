@@ -1,0 +1,14 @@
+apiVersion: v2
+name: workstation-agent
+description: AI Agent deployment for Workstation Platform - per-user agent with persistence
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - ai-agent
+  - kubernetes
+  - multi-tenant
+  - persistence
+maintainers:
+  - name: Gaston Zarate
+    email: gaston@example.com

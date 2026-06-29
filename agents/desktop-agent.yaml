@@ -1,0 +1,30 @@
+# Desktop Agent Configuration
+# Deploy with: helm install desktop-<name> ./charts/desktop --namespace desktop-<name> --set desktop.name=<name>,desktop.userId=<user-id>
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: desktop-config
+  labels:
+    app.kubernetes.io/name: workstation-desktop
+data:
+  # Desktop environment
+  DESKTOP_ENV: "xfce"
+  DISPLAY: ":1"
+  
+  # VNC configuration
+  VNC_PORT: "5900"
+  VNC_DEPTH: "24"
+  VNC_RESOLUTION: "1920x1080"
+  
+  # Guacamole configuration
+  GUACAMOLE_ENABLED: "true"
+  GUACD_HOSTNAME: "localhost"
+  GUACD_PORT: "4822"
+  
+  # Persistence
+  PERSISTENCE_ENABLED: "true"
+  PERSISTENCE_PATH: "/home/user"
+  
+  # Auto-shutdown
+  AUTO_SHUTDOWN_ENABLED: "true"
+  AUTO_SHUTDOWN_TIMEOUT: "60"

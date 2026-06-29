@@ -1,10 +1,60 @@
-src/__pycache__/helpers.cpython-311.pyc
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-*.pyc
-.env
-pulumi-state/*
-pulumi_project/*
-.claude
-.idea
-CLAUDE.md
-app-codebase.xml
+# Virtual environments
+venv/
+env/
+ENV/
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kubernetes
+*.kubeconfig
+kubeconfig*
+
+# Helm
+charts/*/charts/
+*.tgz
+
+# Backups
+backups/
+
+# Logs
+*.log
+logs/
+
+# Temporary
+tmp/
+temp/
+*.tmp
