@@ -12,11 +12,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "desktop.selectorLabels" | nindent 6 }}
+      {{- include "desktop.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "desktop.selectorLabels" | nindent 8 }}
+        {{- include "desktop.selectorLabels" . | nindent 8 }}
       annotations:
         desktop.workstation.io/name: {{ .Values.desktop.name | quote }}
         desktop.workstation.io/user: {{ .Values.desktop.userId | quote }}
