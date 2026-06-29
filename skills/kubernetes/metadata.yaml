@@ -1,0 +1,10 @@
+id: kubernetes
+title: Kubernetes Multi-Tenant
+version: 1.0
+summary: K8s deployment patterns for multi-tenant platforms with namespace isolation
+tags:
+  - kubernetes
+  - multi-tenant
+  - namespaces
+  - rbac
+  - network-policies

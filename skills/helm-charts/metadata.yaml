@@ -1,0 +1,10 @@
+id: helm-charts
+title: Helm Charts
+version: 1.0
+summary: Helm chart best practices for reusable, maintainable deployments
+tags:
+  - helm
+  - kubernetes
+  - charts
+  - packaging
+  - deployment

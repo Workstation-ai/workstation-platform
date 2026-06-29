@@ -1,0 +1,11 @@
+id: multicloud
+title: Multi-Cloud Management
+version: 1.0
+summary: Multi-cloud management patterns (AWS, Azure, Hetzner)
+tags:
+  - cloud
+  - aws
+  - azure
+  - hetzner
+  - multicloud
+  - infrastructure

@@ -1,0 +1,11 @@
+id: remote-desktop
+title: Remote Desktop
+version: 1.0
+summary: Browser-based desktop technologies (Guacamole, VNC, noVNC)
+tags:
+  - desktop
+  - vnc
+  - guacamole
+  - novnc
+  - remote-access
+  - browser

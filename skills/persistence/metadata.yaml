@@ -1,0 +1,11 @@
+id: persistence
+title: Persistence Patterns
+version: 1.0
+summary: PVC, S3, and state management patterns for Kubernetes
+tags:
+  - persistence
+  - storage
+  - pvc
+  - s3
+  - statefulset
+  - backup

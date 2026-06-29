@@ -1,0 +1,11 @@
+id: ai-agents
+title: AI Agents
+version: 1.0
+summary: AI agent deployment patterns for multi-tenant platforms
+tags:
+  - ai
+  - agents
+  - llm
+  - multi-tenant
+  - persistence
+  - api

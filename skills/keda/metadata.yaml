@@ -1,0 +1,10 @@
+id: keda
+title: KEDA Event-Driven Scaling
+version: 1.0
+summary: Event-driven autoscaling with KEDA for Kubernetes
+tags:
+  - keda
+  - autoscaling
+  - event-driven
+  - metrics
+  - serverless
