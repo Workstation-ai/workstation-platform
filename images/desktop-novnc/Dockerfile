@@ -1,13 +1,13 @@
 FROM alpine:3.20
 
 LABEL maintainer="Workstation AI <ignacio@workstation.center>"
-LABEL description="Workstation Center OS — branded desktop with Firefox, fluxbox, noVNC"
+LABEL description="Workstation Center OS — branded desktop with Firefox, fluxbox, noVNC, HTTPS redirect"
 
 ENV DISPLAY=:99
 
-# ── System packages + Firefox ESR ──────────────────────────────────────
+# ── System packages + Firefox ESR + nginx ──────────────────────────────
 RUN apk update && apk add --no-cache \
-    xvfb x11vnc websockify fluxbox supervisor \
+    xvfb x11vnc websockify fluxbox supervisor nginx \
     firefox-esr font-dejavu \
     bash curl git
 
@@ -20,6 +20,9 @@ RUN git clone --depth 1 https://github.com/novnc/noVNC.git /usr/share/novnc && \
 RUN mkdir -p /usr/share/workstation/branding && \
     curl -fsSL https://workstation.center/logo.png \
       -o /usr/share/workstation/branding/logo.png
+
+# ── Nginx config: HTTP→HTTPS redirect + WebSocket proxy ────────────────
+COPY nginx/workstation.conf /etc/nginx/http.d/default.conf
 
 # ── Desktop user ───────────────────────────────────────────────────────
 RUN adduser -D -s /bin/bash desktop && \
