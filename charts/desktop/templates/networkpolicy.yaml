@@ -11,20 +11,9 @@ spec:
       {{- include "desktop.selectorLabels" . | nindent 6 }}
   policyTypes:
     - Ingress
-    - Egress
   ingress:
     - ports:
         - protocol: TCP
           port: 6080
         - protocol: TCP
           port: 5900
-  egress:
-    - ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
-        - protocol: TCP
-          port: 80
-        - protocol: TCP
-          port: 443
