@@ -58,7 +58,7 @@ session.screen0.toolbar.widthPercent: 100
 FBINIT
 
 RUN if [ "$BROWSER" = "chromium" ]; then \
-      BROWSER_CMD="chromium --no-sandbox"; \
+      BROWSER_CMD="chromium --no-sandbox --disable-gpu --disable-dev-shm-usage --disable-setuid-sandbox --window-size=1920,1080"; \
       BROWSER_LABEL="Chromium"; \
     else \
       BROWSER_CMD="firefox-esr"; \
