@@ -1,26 +1,46 @@
 FROM alpine:3.20
 
 LABEL maintainer="Workstation AI <ignacio@workstation.center>"
-LABEL description="Workstation Center OS — branded desktop with Firefox, fluxbox, noVNC, HTTPS redirect"
+LABEL description="Workstation Center OS — branded desktop with Chromium/Firefox, fluxbox, noVNC, HTTPS redirect"
+
+ARG BROWSER=chromium
 
 ENV DISPLAY=:99
+ENV BROWSER=${BROWSER}
 
-# ── System packages + Firefox ESR + nginx ──────────────────────────────
+# ── System packages + browser + nginx ──────────────────────────────────
 RUN apk update && apk add --no-cache \
     xvfb x11vnc websockify fluxbox supervisor nginx \
-    firefox-esr font-dejavu xterm \
-    xprintidle xdotool \
-    bash curl git
+    font-dejavu xterm \
+    xprintidle \
+    bash curl git \
+  && if [ "$BROWSER" = "chromium" ]; then \
+       apk add --no-cache chromium; \
+     else \
+       apk add --no-cache firefox-esr; \
+     fi
 
-# ── noVNC web client ───────────────────────────────────────────────────
+# ── noVNC web client (no .git) ────────────────────────────────────────
 RUN git clone --depth 1 https://github.com/novnc/noVNC.git /usr/share/novnc && \
     git clone --depth 1 https://github.com/novnc/websockify.git /usr/share/novnc/utils/websockify && \
-    ln -sf /usr/share/novnc/vnc.html /usr/share/novnc/index.html
+    ln -sf /usr/share/novnc/vnc.html /usr/share/novnc/index.html && \
+    rm -rf /usr/share/novnc/.git /usr/share/novnc/utils/websockify/.git
 
 # ── Branding assets ────────────────────────────────────────────────────
 RUN mkdir -p /usr/share/workstation/branding && \
     curl -fsSL https://workstation.center/logo.png \
       -o /usr/share/workstation/branding/logo.png
+
+# ── Strip + cleanup (single layer) ─────────────────────────────────────
+RUN apk del --purge git curl && \
+    rm -rf /var/cache/apk/* /var/lib/apk/lists/* \
+           /usr/share/man /usr/share/doc /usr/share/locale \
+           /usr/share/icons/Adwaita/*/legacy/ /usr/share/icons/Adwaita/*/apps/ \
+           /usr/share/X11/locale && \
+    find /usr/lib -name "*.so.*" -exec strip --strip-unneeded {} + 2>/dev/null; \
+    find /usr/bin -type f -exec file {} + 2>/dev/null | grep "ELF" | cut -d: -f1 | \
+      xargs -I{} strip --strip-unneeded {} 2>/dev/null; \
+    true
 
 # ── Nginx config: HTTP→HTTPS redirect + WebSocket proxy ────────────────
 COPY nginx/workstation.conf /etc/nginx/http.d/default.conf
@@ -37,10 +57,17 @@ session.screen0.toolbar.visible: true
 session.screen0.toolbar.widthPercent: 100
 FBINIT
 
-RUN cat > /home/desktop/.fluxbox/menu << 'FBMENU'
+RUN if [ "$BROWSER" = "chromium" ]; then \
+      BROWSER_CMD="chromium --no-sandbox"; \
+      BROWSER_LABEL="Chromium"; \
+    else \
+      BROWSER_CMD="firefox-esr"; \
+      BROWSER_LABEL="Firefox"; \
+    fi && \
+    cat > /home/desktop/.fluxbox/menu << FBMENU
 [begin] (Workstation Center OS)
   [submenu] (Applications)
-    [exec] (Firefox) {firefox-esr} <>
+    [exec] (${BROWSER_LABEL}) {${BROWSER_CMD}} <>
     [exec] (Terminal) {xterm} <>
   [end]
   [restart] (Restart)

@@ -31,7 +31,7 @@ spec:
         fsGroup: 0
       containers:
         - name: desktop
-          image: "{{ .Values.desktop.image.repository }}:{{ .Values.desktop.image.tag }}"
+          image: "{{ .Values.desktop.image.repository }}:{{ .Values.desktop.image.tag | default (printf "alpine-%s" .Values.desktop.browser) }}"
           imagePullPolicy: {{ .Values.desktop.image.pullPolicy }}
           ports:
             - name: novnc

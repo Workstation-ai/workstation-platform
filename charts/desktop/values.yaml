@@ -21,9 +21,12 @@ desktop:
   # Desktop type: "novnc" (default, self-contained)
   type: "novnc"
 
+  # Browser: "chromium" (default, better compatibility) or "firefox"
+  browser: "chromium"
+
   image:
     repository: workstation/desktop
-    tag: "alpine-https"
+    tag: ""  # auto-derived from browser: alpine-chromium or alpine-firefox
     pullPolicy: IfNotPresent
 
   # Explicit resource limits (ignored when profile is set)
