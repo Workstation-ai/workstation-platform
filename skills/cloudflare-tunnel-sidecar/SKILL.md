@@ -1,31 +1,16 @@
 ---
 name: cloudflare-tunnel-sidecar
-description: "Trigger: cloudflare tunnel, tunnel sidecar, https redirect, quick tunnel. Set up Cloudflare quick tunnels with HTTPS enforcement in K8s pods."
+description: "Set up Cloudflare quick tunnels as K8s sidecar containers with HTTPS enforcement. Use when exposing pod services publicly, debugging tunnel errors (522, 530, 1033), or configuring WebSocket proxying through tunnels."
 license: Apache-2.0
+compatibility: Requires Kubernetes cluster, cloudflared container image
 metadata:
-  author: "Workstation AI"
-  version: "1.0"
+  author: workstation-ai
+  version: "3.0"
 ---
 
 # Cloudflare Tunnel Sidecar
 
 Run Cloudflare quick tunnels as a sidecar container for public HTTPS access to K8s pods.
-
-## Activation Contract
-
-Use this skill when:
-- Adding Cloudflare tunnel access to a K8s pod
-- Debugging tunnel connectivity (522, 530, 1033 errors)
-- Setting up HTTPS redirect for tunnel users
-- Configuring WebSocket proxying through tunnels
-
-## Hard Rules
-
-- cloudflared has NO shell — use direct command array, not shell script
-- Quick tunnel URLs are ephemeral — change every pod restart
-- Always use `imagePullPolicy: Always` for cloudflared
-- HTTP→HTTPS redirect requires nginx or application-level handling — Cloudflare doesn't auto-redirect
-- Tunnel connects to localhost — the sidecar and main container share the pod network
 
 ## Sidecar Container Spec
 
@@ -48,32 +33,19 @@ Use this skill when:
       memory: "128Mi"
 ```
 
+**CRITICAL:** cloudflared has NO shell — use direct command array, not shell script.
+
 ## HTTPS Enforcement
 
-Cloudflare quick tunnels serve HTTP and HTTPS on the same port. The backend can't distinguish them. Use nginx with `X-Forwarded-Proto`:
+Cloudflare quick tunnels serve HTTP and HTTPS on same port without auto-redirect. Backend uses `X-Forwarded-Proto` header:
 
 ```nginx
-server {
-    listen 6080;
-    if ($http_x_forwarded_proto = "http") {
-        return 301 https://$host$request_uri;
-    }
-    location / {
-        proxy_pass http://127.0.0.1:6081/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
+if ($http_x_forwarded_proto = "http") {
+    return 301 https://$host$request_uri;
 }
 ```
 
-## Tunnel Error Codes
-
-| Code | Meaning | Fix |
-|------|---------|-----|
-| 522 | Connection timed out | Pod restarting — check `kubectl get pods` |
-| 530 | Origin DNS error | Pod not ready — wait for Ready state |
-| 1033 | Tunnel not connected | URL expired — get new URL from logs |
+Without this, users get redirected to HTTP and see nothing.
 
 ## Get Tunnel URL
 
@@ -81,7 +53,40 @@ server {
 kubectl logs <pod> -c cloudflared | grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare\.com' | tail -1
 ```
 
+**Note:** URLs are ephemeral — change every pod restart.
+
+## Tunnel Error Codes
+
+| Code | Meaning | Fix |
+|------|---------|-----|
+| 522 | Connection timed out | Pod restarting — wait or check logs |
+| 530 | Origin DNS error | Pod not ready — check readiness |
+| 1033 | Tunnel not connected | URL expired — get new URL from logs |
+| 404 | No content | nginx not running or wrong path |
+| 403 | Forbidden | File permissions — chown to app user |
+
+## Hard Rules
+
+- Quick tunnel URLs are ephemeral — always capture fresh URL after pod restart
+- HTTP→HTTPS redirect requires nginx or app-level handling
+- Tunnel connects to localhost — sidecar and main container share pod network
+- Use `imagePullPolicy: Always` for cloudflared
+- Network policies must allow egress on port 7844 (QUIC/UDP) for cloudflared
+
+## Network Policy Considerations
+
+Cloudflared needs unrestricted outbound:
+- UDP 7844 (QUIC protocol)
+- HTTPS 443 (fallback)
+- DNS 53
+
+Do NOT restrict egress in network policies if using cloudflared sidecar.
+
+## Scripts
+
+See [scripts/deploy-tunnel.sh](scripts/deploy-tunnel.sh) for a complete deployment example.
+
 ## References
 
 - `images/desktop-novnc/nginx/workstation.conf` — nginx HTTPS redirect config
-- `images/desktop-novnc/supervisord.conf` — process manager config
+- `charts/desktop/templates/deployment.yaml` — Helm deployment with sidecar

@@ -1,113 +1,124 @@
 ---
 name: alpine-desktop-image
-description: "Trigger: build desktop image, alpine desktop, dockerfile, desktop docker. Build lightweight Alpine-based desktop images with Firefox and noVNC."
+description: "Build lightweight Alpine-based desktop images with configurable browser (chromium/firefox), supervisord, nginx HTTPS proxy, inactivity monitor, and branding. Use when building desktop container images for Kubernetes."
 license: Apache-2.0
+compatibility: Requires Docker, internet access for package installation
 metadata:
-  author: "Workstation AI"
-  version: "1.0"
+  author: workstation-ai
+  version: "3.0"
 ---
 
 # Alpine Desktop Image
 
-Build lightweight, self-contained desktop images for Kubernetes.
+Build lightweight, self-contained desktop images for Kubernetes with browser selection, HTTPS reverse proxy, inactivity monitoring, and branding.
 
-## Activation Contract
+## Overview
 
-Use this skill when:
-- Building or modifying the desktop Docker image
-- Adding packages to the desktop environment
-- Customizing branding (logo, wallpaper, menu)
-- Debugging image build issues
+Alpine 3.20 base (~8MB) with configurable browser, supervisord process manager, and 5 services.
 
-## Hard Rules
+## Quick Reference
 
-- Base image: `alpine:3.20` — not debian (47% smaller)
-- Alpine font package: `font-dejavu` (NOT `fonts-dejavu`)
-- `x11vnc -storepasswd` is interactive — skip VNC password for web-only access
-- Use supervisord, NOT shell scripts with `&` — survives parent process exit
-- noVNC is cloned from GitHub at build time — pin to a tag for reproducibility
-- Branding assets downloaded at build time — verify URL is accessible
+| Component | Firefox | Chromium |
+|-----------|---------|----------|
+| Image size | ~525MB | ~808MB |
+| Package | `firefox-esr` | `chromium` |
+| Startup | ~3s | ~5s |
+| Web compat | Good | Excellent |
 
-## Package List
+## Browser Selection
 
-```
-xvfb x11vnc websockify fluxbox nginx supervisor
-firefox-esr font-dejavu xterm bash curl git
-```
-
-## Supervisord Config
-
-```ini
-[supervisord]
-nodaemon=true
-user=root
-
-[program:xvfb]
-command=Xvfb :99 -screen 0 1920x1080x24 -ac
-autorestart=true
-priority=10
-
-[program:fluxbox]
-command=fluxbox
-environment=DISPLAY=":99",HOME="/home/desktop"
-user=desktop
-autorestart=true
-priority=20
-
-[program:x11vnc]
-command=x11vnc -display :99 -nopw -forever -shared -rfbport 5900
-autorestart=true
-priority=30
-
-[program:websockify]
-command=websockify --web /usr/share/novnc 6081 localhost:5900
-autorestart=true
-priority=40
-
-[program:nginx]
-command=nginx -g "daemon off;"
-autorestart=true
-priority=50
-```
-
-## Build & Load
+Dockerfile ARG controls which browser is installed:
 
 ```bash
-# Build on host
-docker build -t workstation/desktop:alpine-https images/desktop-novnc/
+# Build Firefox version (default, smaller)
+docker build --build-arg BROWSER=firefox -t desktop:firefox .
 
-# Load into minikube
-minikube image load workstation/desktop:alpine-https
-
-# Or pipe (avoids minikube cache)
-docker save workstation/desktop:alpine-https | docker exec -i minikube docker load
+# Build Chromium version (better compat, larger)
+docker build --build-arg BROWSER=chromium -t desktop:chromium .
 ```
 
-## Disk Space Notes
+### Chromium Flags (REQUIRED in containers)
 
-- `docker save` needs 2x image size in temp space
-- Clean Docker first: `docker system prune -af`
-- Minikube KIC base image uses ~16GB overlay2 — not reclaimable
-- Alpine image: ~524MB vs Debian: ~995MB
+Chromium needs special flags or it shows a blank screen:
+
+```
+--no-sandbox --disable-gpu --disable-dev-shm-usage --disable-setuid-sandbox --window-size=1920,1080
+```
+
+## Supervisord (5 Services)
+
+Process manager handles all services — no shell scripts with `&`:
+
+| Priority | Service | Command | Port |
+|----------|---------|---------|------|
+| 10 | Xvfb | `Xvfb :99 -screen 0 1920x1080x24` | :99 |
+| 20 | Fluxbox | `fluxbox` (DISPLAY=:99) | — |
+| 30 | x11vnc | `x11vnc -display :99 -nopw -forever` | 5900 |
+| 40 | websockify | `websockify 6081 localhost:5900` | 6081 |
+| 50 | nginx | `nginx -g 'daemon off;'` | 6080 |
+
+## Nginx HTTPS Proxy
+
+nginx on port 6080 handles HTTP→HTTPS redirect via `X-Forwarded-Proto` header:
+
+```nginx
+server {
+    listen 6080;
+    if ($http_x_forwarded_proto = "http") {
+        return 301 https://$host$request_uri;
+    }
+    location / {
+        proxy_pass http://127.0.0.1:6081;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+## Inactivity Monitor
+
+Uses `xprintidle` to detect X11 idle time and shut down supervisord:
+
+```bash
+# Environment variable
+IDLE_TIMEOUT_MIN=60  # minutes, 0=disabled
+```
 
 ## Branding
 
-- Logo: `curl -fsSL https://workstation.center/logo.png -o /usr/share/workstation/branding/logo.png`
-- Fluxbox menu: custom `[begin] (Workstation Center OS)` with app launcher
-- Wallpaper: copied to `/home/desktop/.workstation/wallpaper.png` at runtime
+- Logo: `https://workstation.center/logo.png`
+- Wallpaper: downloaded at runtime, set via `fbsetbg`
+- Title: "Workstation Center OS"
+- Menu: custom fluxbox menu with app launcher
 
 ## Port Map
 
 | Port | Service | Purpose |
 |------|---------|---------|
-| 6080 | nginx | HTTPS entry point + HTTP→HTTPS redirect |
-| 6081 | websockify | WebSocket bridge + noVNC static files |
+| 6080 | nginx | HTTPS entry + HTTP→HTTPS redirect |
+| 6081 | websockify | WebSocket bridge + noVNC files |
 | 5900 | x11vnc | VNC protocol |
 | :99 | Xvfb | Virtual framebuffer |
 
+## Helm Resource Profiles
+
+```yaml
+desktop:
+  profile: small  # small (250m/256Mi), medium (500m/512Mi), large (1/1Gi)
+  browser: chromium  # chromium or firefox
+  image:
+    tag: alpine-chromium  # auto-derived from browser
+```
+
+## Scripts
+
+See [scripts/build.sh](scripts/build.sh) for the build script.
+
 ## References
 
-- `images/desktop-novnc/Dockerfile` — image definition
-- `images/desktop-novnc/supervisord.conf` — process manager
+- `images/desktop-novnc/Dockerfile` — Full Dockerfile
+- `images/desktop-novnc/supervisord.conf` — Process manager
 - `images/desktop-novnc/nginx/workstation.conf` — HTTPS proxy
-- `images/desktop-novnc/entrypoint.sh` — startup script
+- `images/desktop-novnc/entrypoint.sh` — Startup script
+- `images/desktop-novnc/inactivity-monitor.sh` — Idle detection
