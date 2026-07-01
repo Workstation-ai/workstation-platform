@@ -169,6 +169,7 @@ Skills live in `skills/` and follow [agentskills.io](https://agentskills.io) for
 | [freestyle-vm-management](skills/freestyle-vm-management/SKILL.md) | freestyle, freestyle.sh vm | Freestyle.sh CLI and VMs (read limitations first!) |
 | [popeye-cluster-diagnostics](skills/popeye-cluster-diagnostics/SKILL.md) | popeye, cluster health | Cluster scanning and diagnostics |
 | [longhorn-distributed-storage](skills/longhorn-distributed-storage/SKILL.md) | longhorn, persistent storage | Distributed PVC storage |
+| [skill-factory](skills/skill-factory/SKILL.md) | create skill, generate AGENTS.md, agent docs | Create skills and AGENTS.md for any repo |
 
 ## Security Considerations
 
